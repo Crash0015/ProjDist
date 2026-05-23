@@ -3,6 +3,7 @@ services:
     name: ticketing-api
     env: docker
     plan: free
+    rootDir: apps/api
     dockerfilePath: apps/api/Dockerfile
     envVars:
       - key: PORT
@@ -22,6 +23,7 @@ services:
     name: ticketing-web
     env: docker
     plan: free
+    rootDir: apps/web
     dockerfilePath: apps/web/Dockerfile
     envVars:
       - key: VITE_API_URL
