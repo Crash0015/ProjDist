@@ -4,7 +4,7 @@ services:
     env: docker
     plan: free
     rootDir: apps/api
-    dockerfilePath: apps/api/Dockerfile
+    dockerfilePath: Dockerfile
     envVars:
       - key: PORT
         value: 4000
@@ -24,7 +24,7 @@ services:
     env: docker
     plan: free
     rootDir: apps/web
-    dockerfilePath: apps/web/Dockerfile
+    dockerfilePath: Dockerfile
     envVars:
       - key: VITE_API_URL
         value: https://ticketing-api.onrender.com
