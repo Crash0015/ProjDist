@@ -1,0 +1,14 @@
+{
+  "name": "ticketing-demo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "tests/e2e"
+  ],
+  "scripts": {
+    "test": "npm --workspace apps/api test",
+    "e2e": "npx playwright test",
+    "perf": "k6 run tests/perf/basic-flow.js",
+    "arch": "npx dependency-cruiser --config .dependency-cruiser.js apps"
+  }
+}
