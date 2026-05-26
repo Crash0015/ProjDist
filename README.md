@@ -23,12 +23,12 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 - Load (massive): `k6 run tests/perf/million-users.js`
 
 ## Quality and Security
-- Dockerfile lint: Hadolint (CI)
-- Image scan: Trivy (CI)
-- Hardening: Dockle (CI)
-- SBOM: Syft (CI)
-- Image scan: Grype (CI)
-- DAST: OWASP ZAP (manual workflow)
+- Dockerfile lint: Hadolint (Jenkins)
+- Image scan: Trivy (Jenkins)
+- Hardening: Dockle (Jenkins)
+- SBOM: Syft (Jenkins)
+- Image scan: Grype (Jenkins)
+- DAST: OWASP ZAP (Jenkins)
 
 ## Architecture
 - Run dependency rules: `npm run arch`
@@ -36,8 +36,8 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 ## Auth Security
 - 5 failed login attempts lock the account for 10 minutes.
 
-## Security (DAST)
-- Trigger workflow `dast` with secret `DAST_TARGET` pointing to your deployed URL.
+## Jenkins
+- See `docs/jenkins-setup.md` and `docs/jenkins-tools.md`.
 
 ## Notes
 This repo is designed for demos and a short-lived deployment.
