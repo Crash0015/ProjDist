@@ -18,7 +18,7 @@ pipeline {
 
     stage("Install Dependencies") {
       steps {
-        sh '''docker run --rm -v "$WORKSPACE":/workspace -w /workspace node:20-alpine sh -c "npm install --workspace ${API_DIR} && npm install --workspace ${WEB_DIR}"'''
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" node:20-alpine sh -c \"npm install --workspace ${API_DIR} && npm install --workspace ${WEB_DIR}\""
       }
     }
 
@@ -27,7 +27,7 @@ pipeline {
         sh "docker network create ticketing-ci"
         sh "docker run -d --name ticketing-db --network ticketing-ci -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing postgres:16-alpine"
         sh "sleep 5"
-        sh '''docker run --rm --network ticketing-ci -v "$WORKSPACE":/workspace -w /workspace -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c "npm run test"'''
+        sh "docker run --rm --network ticketing-ci -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c \"npm run test\""
       }
       post {
         always {
@@ -39,7 +39,7 @@ pipeline {
 
     stage("Architecture Rules") {
       steps {
-        sh '''docker run --rm -v "$WORKSPACE":/workspace -w /workspace node:20-alpine sh -c "npm run arch"'''
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" node:20-alpine sh -c \"npm run arch\""
       }
     }
 
@@ -58,26 +58,26 @@ pipeline {
         expression { return env.SONAR_TOKEN?.trim() }
       }
       steps {
-        sh "docker run --rm -e SONAR_TOKEN=${SONAR_TOKEN} -v \"\$WORKSPACE\":/workspace -w /workspace sonarsource/sonar-scanner-cli:latest -Dsonar.projectKey=Crash0015_ProjDist -Dsonar.organization=crash0015 -Dsonar.sources=${API_DIR} -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${SONAR_TOKEN}"
+        sh "docker run --rm -e SONAR_TOKEN=${SONAR_TOKEN} -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" sonarsource/sonar-scanner-cli:latest -Dsonar.projectKey=Crash0015_ProjDist -Dsonar.organization=crash0015 -Dsonar.sources=${API_DIR} -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${SONAR_TOKEN}"
       }
     }
 
     stage("SAST (Semgrep)") {
       steps {
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
       }
     }
 
     stage("SCA (OSV)") {
       steps {
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace ghcr.io/google/osv-scanner:latest --recursive --severity High,Critical ."
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" ghcr.io/google/osv-scanner:latest --recursive --severity High,Critical ."
       }
     }
 
     stage("Repo/IaC Scan") {
       steps {
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
       }
     }
 
