@@ -75,10 +75,13 @@ pipeline {
 
     stage("Deploy to Render") {
       when {
-        expression { return env.RENDER_DEPLOY_HOOK?.trim() }
+        expression {
+          return (env.RENDER_DEPLOY_HOOK?.trim() || env.RENDER_DEPLOY_HOOK_WEB?.trim())
+        }
       }
       steps {
-        powershell "Invoke-RestMethod -Method Post -Uri ${RENDER_DEPLOY_HOOK}"
+        powershell "if ($env:RENDER_DEPLOY_HOOK) { Invoke-RestMethod -Method Post -Uri $env:RENDER_DEPLOY_HOOK }"
+        powershell "if ($env:RENDER_DEPLOY_HOOK_WEB) { Invoke-RestMethod -Method Post -Uri $env:RENDER_DEPLOY_HOOK_WEB }"
       }
     }
   }
