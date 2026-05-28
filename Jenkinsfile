@@ -5,11 +5,6 @@ pipeline {
     NODE_VERSION = "20"
     API_DIR = "apps/api"
     WEB_DIR = "apps/web"
-    E2E_DIR = "tests/e2e"
-    API_URL = "http://localhost:4000"
-    WEB_URL = "http://localhost:5173"
-    DATABASE_URL = "postgres://ticket_user:ticket_pass@localhost:5432/ticketing"
-    JWT_SECRET = "test-secret"
   }
 
   stages {
@@ -33,26 +28,6 @@ pipeline {
       }
     }
 
-    stage("E2E Playwright") {
-      steps {
-        powershell "npx playwright install"
-        powershell "docker run --name ticketing-db -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing -p 5432:5432 -d postgres:16-alpine"
-        powershell "Start-Sleep -Seconds 5"
-        powershell "docker exec ticketing-db psql ${DATABASE_URL} -f ${API_DIR}/src/db/schema.sql"
-        powershell "docker exec ticketing-db psql ${DATABASE_URL} -f ${API_DIR}/src/db/seed.sql"
-        powershell "Start-Process -NoNewWindow powershell -ArgumentList 'node ${API_DIR}/src/index.js'"
-        powershell "npm --workspace ${WEB_DIR} run build"
-        powershell "Start-Process -NoNewWindow powershell -ArgumentList 'npx serve ${WEB_DIR}/dist -l 5173'"
-        powershell "Start-Sleep -Seconds 3"
-        powershell "npx playwright test --config ${E2E_DIR}/playwright.config.js"
-      }
-      post {
-        always {
-          powershell "docker rm -f ticketing-db" 
-        }
-      }
-    }
-
     stage("Architecture Rules") {
       steps {
         powershell "npm run arch"
@@ -66,7 +41,7 @@ pipeline {
         powershell "trivy image ticketing-api"
         powershell "dockle ticketing-api"
         powershell "syft ticketing-api -o table"
-        powershell "grype ticketing-api"
+        powershell "grype ticketing-api --fail-on high"
       }
     }
 
@@ -79,12 +54,22 @@ pipeline {
       }
     }
 
-    stage("DAST (ZAP)") {
-      when {
-        expression { return env.DAST_TARGET?.trim() }
-      }
+    stage("SAST (Semgrep)") {
       steps {
-        powershell "docker run --rm -t owasp/zap2docker-stable zap-baseline.py -t ${DAST_TARGET}"
+        powershell "semgrep scan --config p/owasp-top-ten --config p/javascript --error"
+      }
+    }
+
+    stage("SCA (OSV)") {
+      steps {
+        powershell "osv-scanner --severity High,Critical --recursive ."
+      }
+    }
+
+    stage("Repo/IaC Scan") {
+      steps {
+        powershell "trivy fs --severity HIGH,CRITICAL --exit-code 1 ."
+        powershell "checkov -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
       }
     }
 

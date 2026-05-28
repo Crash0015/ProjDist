@@ -10,6 +10,9 @@ winget install AquaSecurity.Trivy
 winget install Goodwithtech.Dockle
 winget install Anchore.Syft
 winget install Anchore.Grype
+winget install Semgrep.Semgrep
+winget install OSV.OSV-Scanner
+winget install Bridgecrew.Checkov
 ```
 
 ## Sonar Scanner

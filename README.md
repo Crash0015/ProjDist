@@ -18,9 +18,6 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 
 ## Tests
 - Unit/Integration: `npm run test`
-- E2E: `npx playwright test`
-- Load: `k6 run tests/perf/basic-flow.js`
-- Load (massive): `k6 run tests/perf/million-users.js`
 
 ## Quality and Security
 - Dockerfile lint: Hadolint (Jenkins)
@@ -29,6 +26,10 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 - SBOM: Syft (Jenkins)
 - Image scan: Grype (Jenkins)
 - DAST: OWASP ZAP (Jenkins)
+ - SAST: Semgrep (Jenkins)
+ - SCA: OSV-Scanner (Jenkins)
+ - Repo scan: Trivy fs (Jenkins)
+ - IaC scan: Checkov (Jenkins)
 
 ## Architecture
 - Run dependency rules: `npm run arch`

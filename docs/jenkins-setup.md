@@ -25,6 +25,9 @@ Install on Jenkins host:
 - Playwright (via npm in pipeline)
 - hadolint, trivy, dockle, syft, grype
 - sonar-scanner
+- semgrep
+- osv-scanner
+- checkov
 
 If you run Jenkins in Docker, install tools on the host OS.
 
