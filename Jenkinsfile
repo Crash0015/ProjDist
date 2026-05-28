@@ -45,7 +45,7 @@ pipeline {
 
     stage("Docker Lint/Scan") {
       steps {
-        sh "docker run --rm -i hadolint/hadolint hadolint ${API_DIR}/Dockerfile"
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" hadolint/hadolint hadolint ${API_DIR}/Dockerfile"
         sh "docker build -t ticketing-api ${API_DIR}"
         sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:latest ticketing-api"
         sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:latest ticketing-api -o table"
