@@ -18,7 +18,7 @@ pipeline {
 
     stage("Install Dependencies") {
       steps {
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace node:20-alpine sh -c \"npm install --workspace ${API_DIR} && npm install --workspace ${WEB_DIR}\""
+        sh '''docker run --rm -v "$WORKSPACE":/workspace -w /workspace node:20-alpine sh -c "npm install --workspace ${API_DIR} && npm install --workspace ${WEB_DIR}"'''
       }
     }
 
@@ -27,7 +27,7 @@ pipeline {
         sh "docker network create ticketing-ci"
         sh "docker run -d --name ticketing-db --network ticketing-ci -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing postgres:16-alpine"
         sh "sleep 5"
-        sh "docker run --rm --network ticketing-ci -v \"\$WORKSPACE\":/workspace -w /workspace -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c \"npm run test\""
+        sh '''docker run --rm --network ticketing-ci -v "$WORKSPACE":/workspace -w /workspace -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c "npm run test"'''
       }
       post {
         always {
@@ -39,7 +39,7 @@ pipeline {
 
     stage("Architecture Rules") {
       steps {
-        sh "docker run --rm -v \"\$WORKSPACE\":/workspace -w /workspace node:20-alpine sh -c \"npm run arch\""
+        sh '''docker run --rm -v "$WORKSPACE":/workspace -w /workspace node:20-alpine sh -c "npm run arch"'''
       }
     }
 
