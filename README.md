@@ -41,6 +41,7 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 - See `docs/jenkins-setup.md` and `docs/jenkins-tools.md`.
 - Webhook enabled for auto builds.
 - Webhook test: update for trigger.
+- Webhook test: second trigger.
 
 ## Notes
 This repo is designed for demos and a short-lived deployment.
