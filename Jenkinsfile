@@ -43,16 +43,6 @@ pipeline {
       }
     }
 
-    stage("Docker Lint/Scan") {
-      steps {
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" hadolint/hadolint hadolint ${API_DIR}/Dockerfile"
-        sh "docker build -t ticketing-api ${API_DIR}"
-        sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:latest ticketing-api"
-        sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:latest ticketing-api -o table"
-        sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest ticketing-api --fail-on high"
-      }
-    }
-
     stage("SonarCloud") {
       when {
         expression { return env.SONAR_TOKEN?.trim() }
@@ -62,22 +52,48 @@ pipeline {
       }
     }
 
+    stage("Docker Lint/Scan") {
+      steps {
+        script {
+          catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" hadolint/hadolint hadolint ${API_DIR}/Dockerfile"
+            sh "docker build -t ticketing-api ${API_DIR}"
+            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:latest ticketing-api"
+            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:latest ticketing-api -o table"
+            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest ticketing-api --fail-on high"
+          }
+        }
+      }
+    }
+
     stage("SAST (Semgrep)") {
       steps {
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
+        script {
+          catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
+          }
+        }
       }
     }
 
     stage("SCA (OSV)") {
       steps {
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" ghcr.io/google/osv-scanner:latest --recursive --severity High,Critical ."
+        script {
+          catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" ghcr.io/google/osv-scanner:latest --recursive --severity High,Critical ."
+          }
+        }
       }
     }
 
     stage("Repo/IaC Scan") {
       steps {
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
+        script {
+          catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
+          }
+        }
       }
     }
 
@@ -91,6 +107,12 @@ pipeline {
         sh "if [ -n \"${RENDER_DEPLOY_HOOK}\" ]; then curl -s -X POST \"${RENDER_DEPLOY_HOOK}\"; fi"
         sh "if [ -n \"${RENDER_DEPLOY_HOOK_WEB}\" ]; then curl -s -X POST \"${RENDER_DEPLOY_HOOK_WEB}\"; fi"
       }
+    }
+  }
+
+  post {
+    unstable {
+      echo "Static analysis found issues (marked UNSTABLE)."
     }
   }
 }
