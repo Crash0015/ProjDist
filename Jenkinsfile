@@ -24,22 +24,21 @@ pipeline {
 
     stage("Unit/Integration Tests") {
       steps {
-        sh "docker network create ticketing-ci"
-        sh "docker run -d --name ticketing-db --network ticketing-ci -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing postgres:16-alpine"
-        sh "sleep 5"
-        sh "docker run --rm --network ticketing-ci -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c \"npm run test\""
+        script {
+          catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
+            sh "docker network create ticketing-ci"
+            sh "docker run -d --name ticketing-db --network ticketing-ci -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing postgres:16-alpine"
+            sh "for i in 1 2 3 4 5 6 7 8 9 10; do docker run --rm --network ticketing-ci postgres:16-alpine pg_isready -h ticketing-db -U ticket_user && exit 0 || sleep 2; done; exit 1"
+            sh "docker run --rm --network ticketing-ci -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c \"npm run test\""
+          }
+        }
       }
       post {
         always {
-          sh "docker rm -f ticketing-db"
-          sh "docker network rm ticketing-ci"
+          sh "docker logs ticketing-db || true"
+          sh "docker rm -f ticketing-db || true"
+          sh "docker network rm ticketing-ci || true"
         }
-      }
-    }
-
-    stage("Architecture Rules") {
-      steps {
-        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" node:20-alpine sh -c \"npm run arch\""
       }
     }
 
@@ -49,6 +48,12 @@ pipeline {
       }
       steps {
         sh "docker run --rm -e SONAR_TOKEN=${SONAR_TOKEN} -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" sonarsource/sonar-scanner-cli:latest -Dsonar.projectKey=Crash0015_ProjDist -Dsonar.organization=crash0015 -Dsonar.sources=${API_DIR} -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=${SONAR_TOKEN}"
+      }
+    }
+
+    stage("Architecture Rules") {
+      steps {
+        sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" node:20-alpine sh -c \"npm run arch\""
       }
     }
 
