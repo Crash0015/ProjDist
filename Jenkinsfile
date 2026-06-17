@@ -79,7 +79,7 @@ pipeline {
       steps {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-            sh "docker run --rm -v \"${WORKSPACE}:/src\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" returntocorp/semgrep sh -c 'ln -sf \$\$PWD /src 2>/dev/null; semgrep --config p/owasp-top-ten --config p/javascript --error'"
           }
         }
       }
@@ -89,7 +89,7 @@ pipeline {
       steps {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-            sh "docker run --rm -v \"${WORKSPACE}:/src\" -w /src ghcr.io/google/osv-scanner:latest --recursive ."
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" ghcr.io/google/osv-scanner:latest --recursive ."
           }
         }
       }
@@ -100,7 +100,7 @@ pipeline {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
             sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
-            sh "docker run --rm -v \"${WORKSPACE}:/src\" -w /src bridgecrew/checkov:latest -f /src/render.yaml -f /src/infra/docker-compose.yml --quiet --soft-fail"
+            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail"
           }
         }
       }
