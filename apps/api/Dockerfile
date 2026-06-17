@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
 WORKDIR /app
+RUN apk upgrade --no-cache
 COPY package.json package-lock.json* ./
 RUN npm install --production
 
