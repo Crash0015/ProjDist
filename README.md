@@ -1,35 +1,24 @@
 # Ticketing Demo Platform
 
-Demo platform for a production-like pipeline: Dockerized frontend + backend + Postgres, with CI/CD, quality checks, Playwright E2E, and k6 load tests.
+Demo platform for a production-like pipeline: Dockerized frontend + backend + Postgres, with CI/CD via Jenkins and static quality checks.
 
 ## Structure
-- apps/api: Express API
-- apps/web: React frontend (static build)
-- infra: Docker and local compose
-- tests/e2e: Playwright tests
-- tests/perf: k6 scripts
-- docs: diagrams and ADRs
+- `apps/api`: Express API
+- `apps/web`: React frontend (Vite + nginx)
+- `infra`: Docker and local compose
+- `docs`: Architecture and setup docs
 
 ## Local setup (docker)
-1) Create .env files in apps/api and apps/web (see .env.example files).
+1) Copy `.env.example` to `.env` in `apps/api` and `apps/web`.
 2) Run `docker compose -f infra/docker-compose.yml up --build`.
-3) API: http://localhost:4000
-4) Web: http://localhost:5173
+3) API: `http://localhost:4000`
+4) Web: `http://localhost:5173`
 
 ## Tests
-- Unit/Integration: `npm run test`
+- Unit/Integration: `npm run test` (via node:test + supertest, requires Postgres)
 
-## Quality and Security
-- Dockerfile lint: Hadolint (Jenkins)
-- Image scan: Trivy (Jenkins)
-- Hardening: Dockle (Jenkins)
-- SBOM: Syft (Jenkins)
-- Image scan: Grype (Jenkins)
-- DAST: OWASP ZAP (Jenkins)
- - SAST: Semgrep (Jenkins)
- - SCA: OSV-Scanner (Jenkins)
- - Repo scan: Trivy fs (Jenkins)
- - IaC scan: Checkov (Jenkins)
+## Pipeline (Jenkins — static-qa-pipeline)
+- Checkout → Install Dependencies → Unit/Integration Tests → SonarCloud → Architecture Rules → Docker Lint/Scan → SAST (Semgrep) → SCA (OSV-Scanner) → Repo/IaC Scan → Deploy to Render
 
 ## Architecture
 - Run dependency rules: `npm run arch`
@@ -37,11 +26,7 @@ Demo platform for a production-like pipeline: Dockerized frontend + backend + Po
 ## Auth Security
 - 5 failed login attempts lock the account for 10 minutes.
 
-## Jenkins
-- See `docs/jenkins-setup.md` and `docs/jenkins-tools.md`.
-- Webhook enabled for auto builds.
-- Webhook test: update for trigger.
-- Webhook test: second trigger.
-
 ## Notes
-This repo is designed for demos and a short-lived deployment.
+- This project uses **Jenkins** as CI/CD (not GitHub Actions).
+- The pipeline focuses on **static quality** (SonarCloud, Semgrep, Trivy, Hadolint, OSV-Scanner, Checkov, dependency-cruiser).
+- Render deploy requires configuring `RENDER_DEPLOY_HOOK` and `RENDER_DEPLOY_HOOK_WEB` in Jenkins credentials.

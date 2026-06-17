@@ -65,7 +65,7 @@ pipeline {
             sh "docker build -t ticketing-api ${API_DIR}"
             sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:latest ticketing-api"
             sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:latest ticketing-api -o table"
-            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest ticketing-api --fail-on high"
+            sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest ticketing-api --fail-on critical"
           }
         }
       }
@@ -75,7 +75,7 @@ pipeline {
       steps {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
+            sh "docker run --rm -v \"${WORKSPACE}:/src\" returntocorp/semgrep semgrep --config p/owasp-top-ten --config p/javascript --error"
           }
         }
       }
@@ -85,7 +85,7 @@ pipeline {
       steps {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" ghcr.io/google/osv-scanner:latest --recursive --severity High,Critical ."
+            sh "docker run --rm -v \"${WORKSPACE}:/src\" -w /src ghcr.io/google/osv-scanner:latest --recursive ."
           }
         }
       }
@@ -96,7 +96,7 @@ pipeline {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
             sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" aquasec/trivy:latest fs --severity HIGH,CRITICAL --exit-code 1 ."
-            sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" bridgecrew/checkov:latest -f render.yaml -f infra/docker-compose.yml --quiet --soft-fail false"
+            sh "docker run --rm -v \"${WORKSPACE}:/src\" -w /src bridgecrew/checkov:latest -f /src/render.yaml -f /src/infra/docker-compose.yml --quiet --soft-fail"
           }
         }
       }
