@@ -42,10 +42,11 @@ El pipeline ejecuta solo pruebas estáticas. No usa GitHub Actions.
 10. **Deploy to Render** — POST a deploy hooks (requiere credenciales configuradas)
 
 ### Errores conocidos y arreglados (Jun 2026)
-- ❌ Semgrep: faltaba volumen `/src` → **arreglado**
+- ❌ Semgrep: faltaba volumen `/src` → **arreglado** (usa `-v jenkins_home` + symlink)
 - ❌ OSV-Scanner: flag `--severity` no existe en latest → **arreglado**
 - ❌ Checkov: `--soft-fail false` inválido → **arreglado**
-- ⚠️ Grype: `--fail-on high` dejaba el build UNSTABLE por vulns en dependencias → cambiado a `critical`
+- ❌ Grype: `--fail-on` encontraba Critical en base Alpine (libcrypto3, libssl3) → **arreglado** (apk upgrade + npm update)
+- ⚠️ Los 3 errores anteriores eran por el mismo root cause: usar `${WORKSPACE}:/src` en Docker-outside-of-Docker no funciona porque el workspace vive en el volumen `jenkins_home`, no en el host
 - ❌ Render: no deploya porque faltan `RENDER_DEPLOY_HOOK` y `RENDER_DEPLOY_HOOK_WEB` en Jenkins
 
 ### Pendiente
