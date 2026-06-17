@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  triggers {
+    githubPush()
+  }
+
   environment {
     API_DIR = "apps/api"
     WEB_DIR = "apps/web"
