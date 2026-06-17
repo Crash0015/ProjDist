@@ -6,6 +6,7 @@ RUN npm install --production
 
 FROM node:20-alpine
 WORKDIR /app
+RUN apk upgrade --no-cache
 ENV NODE_ENV=production
 COPY --from=base /app/node_modules ./node_modules
 COPY src ./src

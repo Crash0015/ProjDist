@@ -30,7 +30,7 @@ pipeline {
       steps {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
-            sh "docker network create ticketing-ci"
+            sh "docker network create ticketing-ci || true"
             sh "docker run -d --name ticketing-db --network ticketing-ci -e POSTGRES_USER=ticket_user -e POSTGRES_PASSWORD=ticket_pass -e POSTGRES_DB=ticketing postgres:16-alpine"
             sh "for i in 1 2 3 4 5 6 7 8 9 10; do docker run --rm --network ticketing-ci postgres:16-alpine pg_isready -h ticketing-db -U ticket_user && exit 0 || sleep 2; done; exit 1"
             sh "docker run --rm --network ticketing-ci -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" -e DATABASE_URL=postgres://ticket_user:ticket_pass@ticketing-db:5432/ticketing -e JWT_SECRET=test-secret node:20-alpine sh -c \"npm run test\""
@@ -66,7 +66,7 @@ pipeline {
         script {
           catchError(buildResult: "UNSTABLE", stageResult: "FAILURE") {
             sh "docker run --rm -v jenkins_home:/var/jenkins_home -w \"${WORKSPACE}\" hadolint/hadolint hadolint ${API_DIR}/Dockerfile"
-            sh "docker build -t ticketing-api ${API_DIR}"
+            sh "docker build --no-cache -t ticketing-api ${API_DIR}"
             sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock goodwithtech/dockle:latest ticketing-api"
             sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:latest ticketing-api -o table"
             sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest ticketing-api --fail-on critical"
